@@ -8,7 +8,7 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 
 import isaaclab_tasks.manager_based.locomotion.velocity.mdp as mdp
-from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg, RewardsCfg
+from .velocity_env_cfg import LocomotionVelocityRoughEnvCfg, RewardsCfg
 
 ##
 # Pre-defined configs
@@ -68,7 +68,7 @@ class H1Rewards(RewardsCfg):
 
 
 @configclass
-class H1RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
+class H1DextTasksRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
     rewards: H1Rewards = H1Rewards()
 
     def __post_init__(self):
@@ -114,7 +114,7 @@ class H1RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
 
 
 @configclass
-class H1RoughEnvCfg_PLAY(H1RoughEnvCfg):
+class H1RoughEnvCfg_PLAY(H1DextTasksRoughEnvCfg):
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
