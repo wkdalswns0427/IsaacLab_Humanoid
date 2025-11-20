@@ -22,7 +22,7 @@ from . import mdp
 ##
 # Pre-defined configs
 ##
-
+from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG 
 from isaaclab_assets.robots.cartpole import CARTPOLE_CFG  # isort:skip
 
 
