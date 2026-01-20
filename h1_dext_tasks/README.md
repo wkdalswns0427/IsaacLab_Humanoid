@@ -22,7 +22,6 @@ It allows you to develop in an isolated environment, outside of the core Isaac L
 - Using a python interpreter that has Isaac Lab installed, install the library in editable mode using:
 
     ```bash
-    # use 'PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
     python -m pip install -e source/h1_dext_tasks
 
 - Verify that the extension is correctly installed by:
@@ -33,14 +32,12 @@ It allows you to develop in an isolated environment, outside of the core Isaac L
         (in the `scripts/list_envs.py` file) so that it can be listed.
 
         ```bash
-        # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
         python scripts/list_envs.py
         ```
 
-    - Running a task:
+    - Running a task in this seperate folder:
 
         ```bash
-        # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
         python scripts/<RL_LIBRARY>/train.py --task=<TASK_NAME>
         ```
 
@@ -51,13 +48,11 @@ It allows you to develop in an isolated environment, outside of the core Isaac L
         - Zero-action agent
 
             ```bash
-            # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
             python scripts/zero_agent.py --task=<TASK_NAME>
             ```
         - Random-action agent
 
             ```bash
-            # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
             python scripts/random_agent.py --task=<TASK_NAME>
             ```
 
