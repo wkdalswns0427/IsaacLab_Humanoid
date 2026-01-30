@@ -13,7 +13,7 @@ from . import agents
 
 
 gym.register(
-    id="Template-H1-Dext-Tasks-Marl-Direct-v0",
+    id="H1-Pick-Block-Dextrous-MARL",
     entry_point=f"{__name__}.h1_dext_tasks_marl_env:H1DextTasksMarlEnv",
     disable_env_checker=True,
     kwargs={

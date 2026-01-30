@@ -7,7 +7,7 @@ from isaaclab_assets import H1_MINIMAL_CFG
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, RigidObjectCfg
-from isaaclab.envs import DirectMARLEnvCfg
+from isaaclab.envs import DirectRLEnvCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import ContactSensorCfg
 from isaaclab.sim import SimulationCfg
@@ -15,31 +15,30 @@ from isaaclab.utils import configclass
 
 
 @configclass
-class H1DextTasksMarlEnvCfg(DirectMARLEnvCfg):
+class H1PickBlockDextrousEnvCfg(DirectRLEnvCfg):
     # env
     decimation = 2
     episode_length_s = 10.0
-    # multi-agent specification and spaces definition
-    possible_agents = ["agent_0", "agent_1"]
-    action_spaces = {"agent_0": 19, "agent_1": 19}
-    observation_spaces = {"agent_0": 47, "agent_1": 47}
+    action_scale = 0.5  # [rad]
+    action_space = 19
+    observation_space = 47
     state_space = 0
 
     # simulation
     sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
 
-    # robot(s)
-    robot_cfg: ArticulationCfg = H1_MINIMAL_CFG
-    contact_sensor_0: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot0/.*", history_length=3, update_period=0.005, track_air_time=False
-    )
-    contact_sensor_1: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot1/.*", history_length=3, update_period=0.005, track_air_time=False
+    # robot
+    robot_cfg: ArticulationCfg = H1_MINIMAL_CFG.replace(prim_path="/World/envs/env_.*/Robot")
+    contact_sensor: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/.*",
+        history_length=3,
+        update_period=0.005,
+        track_air_time=False,
     )
 
-    # object(s)
-    cube_cfg_0: RigidObjectCfg = RigidObjectCfg(
-        prim_path="/World/envs/env_.*/Cube0",
+    # object
+    cube_cfg: RigidObjectCfg = RigidObjectCfg(
+        prim_path="/World/envs/env_.*/Cube",
         spawn=sim_utils.CuboidCfg(
             size=(0.2, 0.2, 0.2),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
@@ -54,34 +53,14 @@ class H1DextTasksMarlEnvCfg(DirectMARLEnvCfg):
             ),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.2, 0.4, 0.9)),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.6, -0.1, 0.1)),
-    )
-    cube_cfg_1: RigidObjectCfg = RigidObjectCfg(
-        prim_path="/World/envs/env_.*/Cube1",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.2, 0.2, 0.2),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                max_depenetration_velocity=1.0,
-                disable_gravity=False,
-            ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=1.0,
-                dynamic_friction=1.0,
-                restitution=0.0,
-            ),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.6, 0.1, 0.1)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.6, 0.0, 0.1)),
     )
 
     # scene
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=256, env_spacing=5.0, replicate_physics=True)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=512, env_spacing=4.0, replicate_physics=True)
 
-    # layout
-    robot_0_y_offset = -0.6
-    robot_1_y_offset = 0.6
-    cube_pos_noise_xy = 0.05
+    # reset randomization
+    cube_pos_noise_xy = 0.1
 
     # end-effector candidates (regex)
     left_ee_body_names = [
@@ -98,6 +77,8 @@ class H1DextTasksMarlEnvCfg(DirectMARLEnvCfg):
         ".*pelvis.*",
         ".*base.*",
     ]
+
+    # hand contact bodies (regex)
     hand_contact_body_names = [
         ".*left_elbow.*",
         ".*right_elbow.*",
@@ -105,8 +86,7 @@ class H1DextTasksMarlEnvCfg(DirectMARLEnvCfg):
         ".*right_shoulder.*",
     ]
 
-    # action/reward scales
-    action_scale = 0.5
+    # rewards
     rew_scale_dist = 1.0
     rew_scale_lift = 5.0
     rew_scale_success = 10.0
