@@ -12,6 +12,7 @@ import torch
 import isaaclab.sim as sim_utils
 from isaaclab.assets import Articulation, RigidObject
 from isaaclab.envs import DirectRLEnv
+from isaaclab.sensors import ContactSensor
 from isaaclab.sim.spawners.from_files import GroundPlaneCfg, spawn_ground_plane
 from isaaclab.utils.math import sample_uniform
 
@@ -30,6 +31,7 @@ class H1PickBlockEnv(DirectRLEnv):
 
         self._left_ee_idx = self._resolve_body_index(self.cfg.left_ee_body_names)
         self._right_ee_idx = self._resolve_body_index(self.cfg.right_ee_body_names)
+        self._hand_contact_ids = self._resolve_hand_contact_ids()
 
         self._cube_pos = self.cube.data.root_pos_w
         self._cube_lin_vel = self.cube.data.root_lin_vel_w
@@ -43,9 +45,18 @@ class H1PickBlockEnv(DirectRLEnv):
             return fallback_ids[0]
         return 0
 
+    def _resolve_hand_contact_ids(self) -> torch.Tensor:
+        body_ids, _ = self._contact_sensor.find_bodies(self.cfg.hand_contact_body_names, preserve_order=True)
+        if len(body_ids) == 0:
+            body_ids, _ = self._contact_sensor.find_bodies(self.cfg.ee_fallback_body_names, preserve_order=True)
+        if len(body_ids) == 0:
+            body_ids = [0]
+        return torch.tensor(body_ids, device=self.device, dtype=torch.long)
+
     def _setup_scene(self):
         self.robot = Articulation(self.cfg.robot_cfg)
         self.cube = RigidObject(self.cfg.cube_cfg)
+        self._contact_sensor = ContactSensor(self.cfg.contact_sensor)
 
         spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg())
 
@@ -55,6 +66,8 @@ class H1PickBlockEnv(DirectRLEnv):
 
         self.scene.articulations["robot"] = self.robot
         self.scene.rigid_objects["cube"] = self.cube
+        self._contact_sensor = ContactSensor(self.cfg.contact_sensor)
+        self.scene.sensors["contact_sensor"] = self._contact_sensor
 
         light_cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.75, 0.75, 0.75))
         light_cfg.func("/World/Light", light_cfg)
@@ -101,6 +114,15 @@ class H1PickBlockEnv(DirectRLEnv):
         rew_lift = self.cfg.rew_scale_lift * lift
         rew_success = self.cfg.rew_scale_success * success
         rew_action = self.cfg.rew_scale_action * torch.sum(self.actions * self.actions, dim=-1)
+        # Reward for hand end-effectors making contact with the cube (contact-based shaping).
+        net_contact_forces = self._contact_sensor.data.net_forces_w_history
+        contact_mag = torch.norm(net_contact_forces[:, :, self._hand_contact_ids], dim=-1)
+        hand_contact_force = contact_mag.amax(dim=(1, 2))
+        contact_bonus = torch.nn.functional.relu(hand_contact_force - self.cfg.contact_force_threshold)
+        rew_contact = self.cfg.rew_scale_contact * contact_bonus
+        # Penalize excessively large contact impulses to discourage kicking.
+        contact_excess = torch.nn.functional.relu(hand_contact_force - self.cfg.contact_force_penalty_threshold)
+        rew_contact_force_penalty = self.cfg.rew_scale_contact_force_penalty * contact_excess
 
         if "log" not in self.extras:
             self.extras["log"] = {}
@@ -111,7 +133,15 @@ class H1PickBlockEnv(DirectRLEnv):
         self.extras["log"]["rew_success"] = rew_success.mean()
         self.extras["log"]["rew_action"] = rew_action.mean()
 
-        return rew_alive + rew_dist + rew_lift + rew_success + rew_action
+        return (
+            rew_alive
+            + rew_dist
+            + rew_lift
+            + rew_success
+            + rew_action
+            + rew_contact
+            + rew_contact_force_penalty
+        )
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         base_height = self.robot.data.root_pos_w[:, 2]

@@ -106,9 +106,8 @@ class H1PickBlockDextrousEnv(DirectRLEnv):
         success = (cube_pos[:, 2] > self.cfg.success_height).float()
 
         net_contact_forces = self._contact_sensor.data.net_forces_w_history
-        hand_contact_force = torch.max(
-            torch.norm(net_contact_forces[:, :, self._hand_contact_ids], dim=-1), dim=1
-        )[0]
+        contact_mag = torch.norm(net_contact_forces[:, :, self._hand_contact_ids], dim=-1)
+        hand_contact_force = contact_mag.amax(dim=(1, 2))
         contact_bonus = torch.nn.functional.relu(hand_contact_force - self.cfg.contact_force_threshold)
 
         rew_dist = -self.cfg.rew_scale_dist * dist

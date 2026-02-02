@@ -45,6 +45,7 @@ class H1PickBlockDextrousEnvCfg(DirectRLEnvCfg):
                 max_depenetration_velocity=1.0,
                 disable_gravity=False,
             ),
+            collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=True),
             mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
             physics_material=sim_utils.RigidBodyMaterialCfg(
                 static_friction=1.0,

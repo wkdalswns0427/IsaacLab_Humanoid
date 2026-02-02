@@ -1,7 +1,7 @@
 # H1 Dext Tasks (Isaac Lab Extension)
 
-This repository is an Isaac Lab extension project. It contains direct and manager-based RL tasks, including
-H1 pick-and-lift tasks (standard and dextrous contact variants).
+This repository is an Isaac Lab extension project. It contains the direct RL H1 pick-and-lift tasks
+(standard and dextrous contact variants).
 
 ## Project layout (high level)
 
@@ -65,52 +65,9 @@ Key behavior:
 - Adds a ContactSensor on the robot.
 - Adds a hand-contact reward term (based on contact force on hand/wrist bodies).
 
-## H1 pick tasks (direct MARL)
+## Removed tasks
 
-### H1-Pick-Block-Dextrous-MARL
-
-Files:
-- Env: `source/h1_dext_tasks/h1_dext_tasks/tasks/direct/h1_dext_tasks_marl/h1_dext_tasks_marl_env.py`
-- Config: `source/h1_dext_tasks/h1_dext_tasks/tasks/direct/h1_dext_tasks_marl/h1_dext_tasks_marl_env_cfg.py`
-- Gym registration: `source/h1_dext_tasks/h1_dext_tasks/tasks/direct/h1_dext_tasks_marl/__init__.py`
-- RSL-RL runner: `source/h1_dext_tasks/h1_dext_tasks/tasks/direct/h1_dext_tasks_marl/agents/rsl_rl_ppo_cfg.py`
-
-Key behavior:
-- Two H1 humanoids (Robot0/Robot1) and two 20 cm cubes (Cube0/Cube1).
-- Two agents (`agent_0`, `agent_1`), each controls one robot.
-- Each agent receives its own observation and reward.
-- ContactSensor on each robot adds a hand-contact reward term.
-
-## Other direct task (template)
-
-### Template-H1-Dext-Tasks-Direct-v0
-
-Files:
-- Env: `source/h1_dext_tasks/h1_dext_tasks/tasks/direct/h1_dext_tasks/h1_dext_tasks_env.py`
-- Config: `source/h1_dext_tasks/h1_dext_tasks/tasks/direct/h1_dext_tasks/h1_dext_tasks_env_cfg.py`
-- Agents: `source/h1_dext_tasks/h1_dext_tasks/tasks/direct/h1_dext_tasks/agents/`
-
-Notes:
-- This is the stock template task (cartpole-based) used as a minimal example.
-
-## Manager-based tasks (template)
-
-### Template-H1-Dext-Tasks-v0
-
-Files:
-- Env config: `source/h1_dext_tasks/h1_dext_tasks/tasks/manager_based/h1_dext_tasks/h1_dext_tasks_env_cfg.py`
-
-Notes:
-- Manager-based task structure with MDP terms and scene config.
-- Uses the cartpole template as a baseline.
-
-### Template-H1-Dext-Tasks-Rough-v0
-
-Files:
-- Env config: `source/h1_dext_tasks/h1_dext_tasks/tasks/manager_based/h1_dext_tasks/h1_dext_tasks_rough_env_cfg.py`
-
-Notes:
-- Locomotion-style template adapted for H1 (rough terrain).
+Manager-based templates and MARL tasks are not registered in this project.
 
 ## How to run
 
@@ -147,7 +104,7 @@ logs/rsl_rl/<experiment_name>/<run_timestamp>/checkpoints/
 
 2) Run the RSL-RL play script:
 ```
-python scripts/rsl_rl/play.py --task=<TASK_NAME> --load_run=<run_timestamp> --checkpoint=<checkpoint_file>
+python scripts/rsl_rl/play.py --task=<TASK_NAME> --checkpoint=<checkpoint_file> --load_run=<run_timestamp> 
 ```
 
 ## Notes for customization
