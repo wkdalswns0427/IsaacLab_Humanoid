@@ -56,7 +56,7 @@ class H1PickBlockEnvCfg(DirectRLEnvCfg):
             ),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.8, 0.0, 0.1)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.5, 0.0, 0.1)),
     )
 
     # scene
@@ -86,6 +86,16 @@ class H1PickBlockEnvCfg(DirectRLEnvCfg):
         ".*left_shoulder.*",
         ".*right_shoulder.*",
     ]
+    left_hand_contact_body_names = [
+        ".*left_elbow.*",
+        ".*left_shoulder.*",
+    ]
+    right_hand_contact_body_names = [
+        ".*right_elbow.*",
+        ".*right_shoulder.*",
+    ]
+    knee_joint_names = [".*_knee.*"]
+    hip_abduction_joint_names = [".*_hip_roll.*"]
 
     # rewards
     rew_scale_alive = 0.1
@@ -93,6 +103,20 @@ class H1PickBlockEnvCfg(DirectRLEnvCfg):
     rew_scale_lift = 10.0
     rew_scale_success = 10.0
     rew_scale_action = -0.05
+    rew_scale_action_rate = -0.01
+    rew_scale_posture_upright = 1.0
+    rew_scale_knee_bend = 1.5
+    rew_scale_reach = 5.0
+    rew_scale_grasp = 4.0
+    rew_scale_hip_abduction = 0.2
+    stage_reach_distance = 0.4
+    stand_duration_s = 0.5
+    bend_start_time_s = 2.0
+    target_hip_abduction = 0.0
+    hip_abduction_sigma = 0.8
+    target_knee_bend = 0.9
+    upright_tilt_sigma = 1.0
+    knee_bend_sigma = 0.4
     rew_scale_contact_force_penalty = -0.005
     contact_force_penalty_threshold = 20.0
     rew_scale_contact = 0.5
