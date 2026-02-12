@@ -1,0 +1,25 @@
+[package]
+version = "0.1.0"
+category = "isaaclab"
+readme  = "README.md"
+
+title = "H1 Mimic Tasks"
+author = "Isaac Lab Project Developers"
+maintainer = "Isaac Lab Project Developers"
+description = "Mimic environment for H1 pick-block task"
+repository = "https://github.com/isaac-sim/IsaacLab.git"
+keywords = ["extension", "isaaclab", "mimic", "h1", "imitation"]
+
+[dependencies]
+"isaaclab" = {}
+"isaaclab_assets" = {}
+"isaaclab_mimic" = {}
+"isaaclab_rl" = {}
+"isaaclab_tasks" = {}
+
+[[python.module]]
+name = "h1_mimic_tasks"
+
+[isaaclab_settings]
+# apt_deps = []
+# ros_ws = "path/from/extension_root/to/ros_ws"

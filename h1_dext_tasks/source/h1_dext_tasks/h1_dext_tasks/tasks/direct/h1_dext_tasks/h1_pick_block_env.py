@@ -36,6 +36,8 @@ class H1PickBlockEnv(DirectRLEnv):
         self._left_hand_contact_ids = self._resolve_hand_contact_ids(self.cfg.left_hand_contact_body_names)
         self._right_hand_contact_ids = self._resolve_hand_contact_ids(self.cfg.right_hand_contact_body_names)
         self._knee_joint_ids = self._resolve_knee_joint_ids()
+        self._left_knee_joint_ids = self._resolve_knee_joint_ids(self.cfg.left_knee_joint_names)
+        self._right_knee_joint_ids = self._resolve_knee_joint_ids(self.cfg.right_knee_joint_names)
         self._hip_abduction_joint_ids = self._resolve_hip_abduction_joint_ids()
 
         self._cube_pos = self.cube.data.root_pos_w
@@ -62,8 +64,10 @@ class H1PickBlockEnv(DirectRLEnv):
             body_ids = [0]
         return torch.tensor(body_ids, device=self.device, dtype=torch.long)
 
-    def _resolve_knee_joint_ids(self) -> torch.Tensor:
-        joint_ids, _ = self.robot.find_joints(self.cfg.knee_joint_names, preserve_order=True)
+    def _resolve_knee_joint_ids(self, name_keys: list[str] | None = None) -> torch.Tensor:
+        if name_keys is None:
+            name_keys = self.cfg.knee_joint_names
+        joint_ids, _ = self.robot.find_joints(name_keys, preserve_order=True)
         if len(joint_ids) == 0:
             joint_ids = list(range(self.robot.num_joints))
         return torch.tensor(joint_ids, device=self.device, dtype=torch.long)
@@ -132,6 +136,7 @@ class H1PickBlockEnv(DirectRLEnv):
         success = (cube_pos[:, 2] > self.cfg.success_height).float()
         cube_lifted = cube_pos[:, 2] > self.cfg.lift_height
         time_s = self.episode_length_buf * (self.cfg.sim.dt * self.cfg.decimation)
+        base_pos_local = self.robot.data.root_pos_w - self.scene.env_origins
 
         rew_alive = self.cfg.rew_scale_alive
         rew_action = self.cfg.rew_scale_action * torch.sum(self.actions * self.actions, dim=-1)
@@ -143,11 +148,6 @@ class H1PickBlockEnv(DirectRLEnv):
         roll, pitch, _ = euler_xyz_from_quat(self.robot.data.root_quat_w)
         tilt_sq = roll * roll + pitch * pitch
         posture_upright = torch.exp(-tilt_sq / (self.cfg.upright_tilt_sigma * self.cfg.upright_tilt_sigma))
-        knee_pos = self.robot.data.joint_pos[:, self._knee_joint_ids]
-        knee_mean = torch.mean(knee_pos, dim=-1)
-        knee_bend = torch.exp(
-            -((knee_mean - self.cfg.target_knee_bend) ** 2) / (self.cfg.knee_bend_sigma * self.cfg.knee_bend_sigma)
-        )
         hip_pos = self.robot.data.joint_pos[:, self._hip_abduction_joint_ids]
         hip_mean = torch.mean(hip_pos, dim=-1)
         hip_centered = torch.exp(
@@ -156,9 +156,16 @@ class H1PickBlockEnv(DirectRLEnv):
         )
         rew_posture = (
             self.cfg.rew_scale_posture_upright * posture_upright
-            + self.cfg.rew_scale_knee_bend * knee_bend
             + self.cfg.rew_scale_hip_abduction * hip_centered
         )
+        left_knee = torch.mean(self.robot.data.joint_pos[:, self._left_knee_joint_ids], dim=-1)
+        right_knee = torch.mean(self.robot.data.joint_pos[:, self._right_knee_joint_ids], dim=-1)
+        kneel_knee = torch.exp(
+            -((left_knee - self.cfg.target_kneel_knee) ** 2)
+            / (self.cfg.kneel_knee_sigma * self.cfg.kneel_knee_sigma)
+        )
+        kneel_activate = (time_s >= self.cfg.bend_start_time_s).float()
+        rew_kneel = self.cfg.rew_scale_kneel * kneel_knee * kneel_activate
 
         # Stage 2: reach and make contact with the box.
         reach_score = torch.exp(-dist / self.cfg.stage_reach_distance)
@@ -191,15 +198,24 @@ class H1PickBlockEnv(DirectRLEnv):
         stage2_mask = (time_s >= self.cfg.bend_start_time_s).float()
         stage3_mask = cube_lifted.float()
 
+        # Penalize standing over the cube to avoid stepping on it.
+        base_xy = base_pos_local[:, :2]
+        cube_xy = cube_pos[:, :2]
+        base_cube_dist = torch.norm(base_xy - cube_xy, dim=-1)
+        base_over_cube = torch.nn.functional.relu(self.cfg.base_over_cube_radius - base_cube_dist)
+        rew_base_over_cube = self.cfg.rew_scale_base_over_cube_penalty * base_over_cube
+
         total_reward = (
             rew_alive
             + rew_action
             + rew_action_rate
             + stage0_mask * (0.5 * rew_posture)
             + stage1_mask * (0.5 * rew_posture)
-            + stage2_mask * (0.25 * rew_posture + rew_reach + rew_contact + rew_grasp)
-            + stage3_mask * (0.25 * rew_posture + rew_reach + rew_contact + rew_grasp + rew_lift + rew_success)
+            + stage2_mask * (0.25 * rew_posture + rew_kneel + rew_reach + rew_contact + rew_grasp)
+            + stage3_mask
+            * (0.25 * rew_posture + rew_kneel + rew_reach + rew_contact + rew_grasp + rew_lift + rew_success)
             + rew_contact_force_penalty
+            + rew_base_over_cube
         )
 
         if "log" not in self.extras:
@@ -220,6 +236,8 @@ class H1PickBlockEnv(DirectRLEnv):
         self.extras["log"]["rew_grasp"] = rew_grasp.mean()
         self.extras["log"]["both_contact"] = both_contact.float().mean()
         self.extras["log"]["rew_contact_force_penalty"] = rew_contact_force_penalty.mean()
+        self.extras["log"]["rew_kneel"] = rew_kneel.mean()
+        self.extras["log"]["rew_base_over_cube"] = rew_base_over_cube.mean()
 
         return total_reward
 

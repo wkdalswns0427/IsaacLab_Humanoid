@@ -95,6 +95,8 @@ class H1PickBlockEnvCfg(DirectRLEnvCfg):
         ".*right_shoulder.*",
     ]
     knee_joint_names = [".*_knee.*"]
+    left_knee_joint_names = [".*left_.*knee.*"]
+    right_knee_joint_names = [".*right_.*knee.*"]
     hip_abduction_joint_names = [".*_hip_roll.*"]
 
     # rewards
@@ -105,17 +107,20 @@ class H1PickBlockEnvCfg(DirectRLEnvCfg):
     rew_scale_action = -0.05
     rew_scale_action_rate = -0.01
     rew_scale_posture_upright = 1.0
-    rew_scale_knee_bend = 1.5
     rew_scale_reach = 5.0
     rew_scale_grasp = 4.0
     rew_scale_hip_abduction = 0.2
+    rew_scale_base_over_cube_penalty = -2.0
+    base_over_cube_radius = 0.25
     stage_reach_distance = 0.4
     stand_duration_s = 0.5
     bend_start_time_s = 2.0
     target_hip_abduction = 0.0
     hip_abduction_sigma = 0.8
-    target_knee_bend = 0.9
     upright_tilt_sigma = 1.0
+    rew_scale_kneel = 4.0
+    target_kneel_knee = 1.2
+    kneel_knee_sigma = 0.35
     knee_bend_sigma = 0.4
     rew_scale_contact_force_penalty = -0.005
     contact_force_penalty_threshold = 20.0
